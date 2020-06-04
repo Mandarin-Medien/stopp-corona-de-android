@@ -29,7 +29,7 @@ The Corona-Tracing-App is completely voluntary. The App generates IDs for all co
 # Checklist
 1. Add your own google-services.json.
 2. Add your own hostname & api-key.
-3. Add your own Nearby and P2P Application Tokens.
+3. Add your own Nearby Tokens.
 
 # License
 This code is distributed under the Apache License 2.0. See the [LICENSE.txt](LICENSE.txt) file for more info.
