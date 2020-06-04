@@ -1,0 +1,205 @@
+package de.schwerin.stoppCoronaDE.screens.reporting.reportStatus
+
+import android.content.Context
+import android.text.SpannableString
+import android.text.SpannableStringBuilder
+import de.schwerin.stoppCoronaDE.R
+import de.schwerin.stoppCoronaDE.constants.Constants.Misc.EMPTY_STRING
+import de.schwerin.stoppCoronaDE.model.entities.infection.message.MessageType
+import de.schwerin.stoppCoronaDE.model.repositories.AgreementData
+import de.schwerin.stoppCoronaDE.screens.base.epoxy.*
+import de.schwerin.stoppCoronaDE.screens.base.epoxy.buttons.buttonType1
+import de.schwerin.stoppCoronaDE.skeleton.core.utils.adapterProperty
+import de.schwerin.stoppCoronaDE.utils.formatDayAndMonthAndYear
+import de.schwerin.stoppCoronaDE.utils.getBoldSpan
+import de.schwerin.stoppCoronaDE.utils.string
+import de.schwerin.stoppCoronaDE.utils.view.safeMap
+import com.airbnb.epoxy.EpoxyController
+import org.threeten.bp.ZonedDateTime
+
+/**
+ * Contains the UI elements of the sickness certification reporting status screen.
+ */
+class ReportingStatusController(
+    private val context: Context,
+    private val onAgreementCheckboxChange: (Boolean) -> Unit,
+    private val onSendReportClick: () -> Unit
+) : EpoxyController() {
+
+    var agreementData: AgreementData? by adapterProperty(null as AgreementData?)
+    var messageType: MessageType? by adapterProperty(null as MessageType?)
+    var dateOfFirstSelfDiagnose: ZonedDateTime? by adapterProperty(null as ZonedDateTime?)
+    var dateOfFirstMedicalConfirmation: ZonedDateTime? by adapterProperty(null as ZonedDateTime?)
+
+    override fun buildModels() {
+        emptySpace(modelCountBuiltSoFar, 12)
+
+        when (messageType) {
+            MessageType.InfectionLevel.Red -> buildScreenForProvenSickness()
+            MessageType.InfectionLevel.Yellow -> buildScreenForSelfTestSuspicion()
+            MessageType.Revoke.Suspicion -> buildScreenForRevokeSuspicion()
+            MessageType.Revoke.Sickness -> buildScreenForRevokeSickness()
+        }
+
+        emptySpace(modelCountBuiltSoFar, 40)
+    }
+
+    private fun buildScreenForProvenSickness() {
+        headlineH1 {
+            id("headline")
+            text(context.string(R.string.certificate_report_status_headline))
+        }
+
+        emptySpace(modelCountBuiltSoFar, 32)
+
+        description {
+            id("description_agreement")
+            val builder = SpannableStringBuilder()
+            builder.append(context.getString(R.string.certificate_report_status_description_1))
+            builder.append(context.getBoldSpan(R.string.certificate_report_status_description_2, insertLeadingSpace = false))
+            builder.append(context.getString(R.string.certificate_report_status_description_3))
+
+            description(SpannableString.valueOf(builder))
+        }
+
+        emptySpace(modelCountBuiltSoFar, 50)
+
+        headlineH2 {
+            id("headline_agreement_description")
+            title(context.string(R.string.certificate_report_status_agreement_description))
+        }
+
+        emptySpace(modelCountBuiltSoFar, 22)
+
+        checkbox(onAgreementCheckboxChange) {
+            id("checkbox_agreement")
+            label(context.string(R.string.certificate_report_status_agreement_label))
+            checked(agreementData?.userHasAgreed ?: false)
+            textStyle(R.style.AppTheme_Heading2)
+            spanSizeOverride { totalSpanCount, _, _ -> totalSpanCount } // whole row
+        }
+
+        emptySpace(modelCountBuiltSoFar, 38)
+
+        buttonType1(onSendReportClick) {
+            id("button_report_infection")
+            text(context.string(R.string.certificate_report_status_button))
+            enabled(agreementData?.userHasAgreed ?: false)
+        }
+    }
+
+    private fun buildScreenForSelfTestSuspicion() {
+        headlineH1 {
+            id("headline")
+            text(context.string(R.string.questionnaire_report_status_headline))
+        }
+
+        emptySpace(modelCountBuiltSoFar, 32)
+
+        description {
+            id("description_agreement")
+            val builder = SpannableStringBuilder()
+            builder.append(context.getString(R.string.questionnaire_report_status_description_1))
+            builder.append(context.getBoldSpan(R.string.questionnaire_report_status_description_2, insertLeadingSpace = false))
+            builder.append(context.getString(R.string.questionnaire_report_status_description_3))
+
+            description(SpannableString.valueOf(builder))
+        }
+
+        emptySpace(modelCountBuiltSoFar, 84)
+
+
+        checkbox(onAgreementCheckboxChange) {
+            id("checkbox_agreement")
+            label(context.string(R.string.questionnaire_report_status_agreement))
+            checked(agreementData?.userHasAgreed ?: false)
+            textStyle(R.style.AppTheme_Heading2)
+            spanSizeOverride { totalSpanCount, _, _ -> totalSpanCount } // whole row
+        }
+
+        emptySpace(modelCountBuiltSoFar, 38)
+
+        buttonType1(onSendReportClick) {
+            id("button_report_infection")
+            text(context.string(R.string.questionnaire_report_status_button))
+            enabled(agreementData?.userHasAgreed ?: false)
+        }
+    }
+
+    private fun buildScreenForRevokeSuspicion() {
+        headlineH1 {
+            id("headline")
+            text(context.string(R.string.revoke_suspicion_headline))
+        }
+
+        emptySpace(modelCountBuiltSoFar, 32)
+
+        description {
+            id("description_revoke")
+            description(SpannableString(context.string(
+                R.string.revoke_suspicion_description,
+                dateOfFirstSelfDiagnose?.formatDayAndMonthAndYear(context).safeMap("Self diagnose date not available!", EMPTY_STRING)
+            )))
+        }
+
+        emptySpace(modelCountBuiltSoFar, 84)
+
+        checkbox(onAgreementCheckboxChange) {
+            id("checkbox_revoke_agreement")
+            label(context.string(R.string.revoke_suspicion_approval))
+            checked(agreementData?.userHasAgreed ?: false)
+            textStyle(R.style.AppTheme_Heading2)
+            spanSizeOverride { totalSpanCount, _, _ -> totalSpanCount } // whole row
+        }
+
+        emptySpace(modelCountBuiltSoFar, 38)
+
+        buttonType1(onSendReportClick) {
+            id("button_revoke_suspicion")
+            text(context.string(R.string.revoke_suspicion_action))
+            enabled(agreementData?.userHasAgreed ?: false)
+        }
+    }
+
+    private fun buildScreenForRevokeSickness() {
+        headlineH1 {
+            id("title")
+            text(context.string(R.string.revoke_sickness_report_title))
+        }
+
+        emptySpace(modelCountBuiltSoFar, 32)
+
+        headlineH2 {
+            id("headline")
+            title(context.string(R.string.revoke_sickness_report_headline))
+        }
+
+        emptySpace(modelCountBuiltSoFar, 32)
+
+        description {
+            id("description_revoke")
+            description(SpannableString(context.string(
+                R.string.revoke_sickness_report_description,
+                dateOfFirstMedicalConfirmation?.formatDayAndMonthAndYear(context).safeMap("Self diagnose date not available!", EMPTY_STRING)
+            )))
+        }
+
+        emptySpace(modelCountBuiltSoFar, 32)
+
+        checkbox(onAgreementCheckboxChange) {
+            id("checkbox_revoke_agreement")
+            label(context.string(R.string.revoke_sickness_report_approval))
+            checked(agreementData?.userHasAgreed ?: false)
+            textStyle(R.style.AppTheme_Heading2)
+            spanSizeOverride { totalSpanCount, _, _ -> totalSpanCount } // whole row
+        }
+
+        emptySpace(modelCountBuiltSoFar, 32)
+
+        buttonType1(onSendReportClick) {
+            id("button_revoke_suspicion")
+            text(context.string(R.string.revoke_sickness_report_action))
+            enabled(agreementData?.userHasAgreed ?: false)
+        }
+    }
+}

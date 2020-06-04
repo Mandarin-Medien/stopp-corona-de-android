@@ -1,0 +1,182 @@
+apply plugin: 'com.android.application'
+apply plugin: 'com.google.gms.google-services'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
+apply plugin: 'kotlin-kapt'
+apply plugin: 'com.google.android.gms.oss-licenses-plugin'
+apply from: "$rootDir/gradle/base.gradle"
+
+def apiVersion = "1.0"
+def minorVersion = "0"
+def versionString = apiVersion + "." + minorVersion
+def buildCode = getBuildCode()
+def buildName = versionString + "." + buildCode.toString()
+def packageName = "de.schwerin.stoppCoronaDE"
+
+android {
+    compileSdkVersion 28
+
+    defaultConfig {
+        applicationId packageName
+        minSdkVersion 23
+        targetSdkVersion 28
+        versionCode buildCode
+        versionName buildName
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        release {
+            /*
+             * Change to your own singing config
+             */
+            def keyStoreFile = file("../keystore/android_debug.keystore")
+
+            keyAlias "android_debug_key"
+            storeFile keyStoreFile
+            storePassword "android_debug"
+            keyPassword "android_debug"
+        }
+
+        debug {
+            def keyStoreFile = file("../keystore/android_debug.keystore")
+            if (keyStoreFile.exists()) {
+                keyAlias "android_debug_key"
+                storeFile keyStoreFile
+                storePassword "android_debug"
+                keyPassword "android_debug"
+            }
+        }
+    }
+
+    flavorDimensions "default"
+
+    productFlavors {
+        dummyApi {
+            /*
+             * Default values provided for CI during merge requests only.
+             *
+             * Always provide real values through local.properties
+             */
+            buildConfigField "String", "HOSTNAME", resolveProperty("API_URL", '"dummy"')
+            buildConfigField "String", "BASE_URL", resolveProperty("API_URL", '"dummy"')
+            buildConfigField "String", "HOSTNAME_TAN", resolveProperty("API_URL", '"dummy"')
+            buildConfigField "String", "BASE_URL_TAN",resolveProperty("API_URL", '"dummy"')
+            buildConfigField "String[]", "CERTIFICATE_CHAIN", '{}'
+            buildConfigField "String[]", "CERTIFICATE_CHAIN_TAN", '{}'
+            buildConfigField "String", "AUTHORIZATION_VALUE", resolveProperty("AUTHORIZATION_VALUE", '"dummy"')
+
+            resValue "string", "NEARBY_API_KEY",  resolveProperty("NEARBY_API_KEY", '"dummy"')
+        }
+
+        stageApi {
+            applicationIdSuffix ".stage"
+            versionName versionString + "." + buildCode.toString() + "-" + getGitDescribe() + "-stageApi"
+
+            buildConfigField "String", "HOSTNAME", resolveProperty("API_URL", '"dummy"')
+            buildConfigField "String", "BASE_URL", resolveProperty("API_URL", '"dummy"')
+            buildConfigField "String", "HOSTNAME_TAN", resolveProperty("API_URL", '"dummy"')
+            buildConfigField "String", "BASE_URL_TAN",resolveProperty("API_URL", '"dummy"')
+            buildConfigField "String[]", "CERTIFICATE_CHAIN", '{}'
+            buildConfigField "String[]", "CERTIFICATE_CHAIN_TAN", '{}'
+            buildConfigField "String", "AUTHORIZATION_VALUE", resolveProperty("AUTHORIZATION_VALUE", '"dummy"')
+
+            resValue "string", "NEARBY_API_KEY",  resolveProperty("NEARBY_API_KEY", '"dummy"')
+        }
+
+        prodApi {
+            buildConfigField "String", "HOSTNAME", resolveProperty("API_URL", '"dummy"')
+            buildConfigField "String", "BASE_URL", resolveProperty("API_URL", '"dummy"')
+            buildConfigField "String", "HOSTNAME_TAN", resolveProperty("API_URL", '"dummy"')
+            buildConfigField "String", "BASE_URL_TAN",resolveProperty("API_URL", '"dummy"')
+            buildConfigField "String[]", "CERTIFICATE_CHAIN", '{}'
+            buildConfigField "String[]", "CERTIFICATE_CHAIN_TAN", '{}'
+            buildConfigField "String", "AUTHORIZATION_VALUE", resolveProperty("AUTHORIZATION_VALUE", '"dummy"')
+
+            resValue "string", "NEARBY_API_KEY",  resolveProperty("NEARBY_API_KEY", '"dummy"')
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+            // don't generate crashlytics id on each build https://developer.android.com/studio/build/optimize-your-build?utm_source=android-studio#disable-crashlytics-build-id
+            ext.alwaysUpdateBuildId = false
+        }
+        release {
+            minifyEnabled true
+            // Commented out because it breaks CI. Do not put back in!
+            // In release builds, the signing config is provided by the CI
+            //signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    compileOptions {
+        sourceCompatibility 1.8
+        targetCompatibility 1.8
+    }
+
+    packagingOptions {
+        exclude 'META-INF/atomicfu.kotlin_module'
+    }
+}
+
+dependencies {
+
+    implementation project(":core")
+
+    kapt "androidx.room:room-compiler:2.2.4"
+
+    implementation 'com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava'
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.2.1"
+
+    implementation "androidx.constraintlayout:constraintlayout:1.1.3"
+    implementation "androidx.cardview:cardview:1.0.0"
+
+    implementation "android.arch.lifecycle:extensions:1.1.1"
+
+    // Firebase messaging
+    implementation 'com.google.firebase:firebase-messaging:20.1.5'
+    implementation 'com.google.firebase:firebase-firestore:21.4.3'
+
+
+    implementation 'com.google.android.gms:play-services-oss-licenses:17.0.0'
+
+    kapt "com.airbnb.android:epoxy-processor:3.7.0"
+
+    kapt "com.squareup.moshi:moshi-kotlin-codegen:1.8.0"
+
+    debugImplementation "com.facebook.stetho:stetho:1.5.1"
+
+    def glideVersion = "4.9.0"
+    implementation "com.github.bumptech.glide:glide:$glideVersion"
+    kapt "com.github.bumptech.glide:compiler:$glideVersion"
+
+    def nearbyVersion = "17.0.0"
+    implementation "com.google.android.gms:play-services-nearby:$nearbyVersion"
+
+    // When upgrading, please check if `android.jetifier.blacklist=bcprov-jdk15on` in
+    // gradle.properties is still needed
+    def bouncyCastleCoreVersion = "1.65"
+    implementation "org.bouncycastle:bcprov-jdk15on:$bouncyCastleCoreVersion"
+    implementation "org.bouncycastle:bcpkix-jdk15on:$bouncyCastleCoreVersion"
+
+    def work_version = "2.3.4"
+    implementation "androidx.work:work-runtime-ktx:$work_version"
+    implementation "androidx.work:work-rxjava2:$work_version"
+
+    implementation "com.airbnb.android:lottie:3.4.0"
+
+    testImplementation "junit:junit:4.12"
+    testImplementation "org.threeten:threetenbp:1.3.8"
+}
+
+// Used in the .gitlab-ci.yml to access the app version
+task getAppVersion {
+    println " version = $versionString"
+}
